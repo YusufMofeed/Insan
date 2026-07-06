@@ -1,0 +1,28 @@
+## Build
+bin/
+obj/
+out/
+
+## IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+## OS
+.DS_Store
+
+## Logs
+*.log
+
+## Secrets
+appsettings*.Development.json
+appsettings*.Production.json
+secrets.json
+
+## EF Core
+Migrations/*Designer.cs
+Migrations/*.db
+
+## Local
+.claude/settings.local.json
