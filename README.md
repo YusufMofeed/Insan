@@ -15,13 +15,24 @@ Insan is a backend platform for managing **Journeys** (individual life records) 
 
 The API is secured with JWT authentication and role-based authorization (`Visitor`, `User`, `Moderator`, `Admin`), and exposes a REST interface for creating, retrieving, and moderating this content.
 
-This repository is the **backend API only** — there is no frontend/UI here.
+This repository is structured as a monorepo: `backend/` contains the complete ASP.NET Core solution described below; `frontend/` is reserved for the upcoming UI and has no code yet.
 
 ---
 
 ## 🏗️ Architecture
 
-Clean Architecture with four layers and a strict, one-directional dependency rule — everything depends inward on **Domain**, and Domain depends on nothing else.
+### Repository layout
+
+```
+Insan/
+├── backend/     → The ASP.NET Core solution (Insan.sln + all four projects below)
+├── frontend/    → Reserved for the upcoming UI — no code yet
+└── docs/        → Product & architecture specification
+```
+
+### Layers
+
+Clean Architecture with four layers and a strict, one-directional dependency rule — everything depends inward on **Domain**, and Domain depends on nothing else. All four live under `backend/`.
 
 ```
 Insan.API              → Controllers, request/response DTOs, middleware, DI composition root (Program.cs)
@@ -89,7 +100,7 @@ Prerequisites: [.NET 9 SDK](https://dotnet.microsoft.com/download), a running Po
 
 ```bash
 git clone <repository-url>
-cd Insan
+cd Insan/backend
 dotnet restore
 
 cd Insan.API
@@ -119,11 +130,11 @@ No secrets are committed to this repository. Locally they're supplied via .NET U
 
 ## 🗄️ Database
 
-- The schema is managed with EF Core migrations (`Insan.Infrastructure/Persistence/Migrations`), covering all six entities: `User`, `Journey`, `Voice`, `Memory`, `Story`, `LifeEvent`.
+- The schema is managed with EF Core migrations (`backend/Insan.Infrastructure/Persistence/Migrations`), covering all six entities: `User`, `Journey`, `Voice`, `Memory`, `Story`, `LifeEvent`.
 - **Migrations are applied automatically on startup** (`Database.MigrateAsync()`), with retry logic to tolerate the database not being reachable yet (e.g. a Postgres container still starting up). This never drops or recreates the database.
-- To add a new migration after changing an entity or its configuration:
+- To add a new migration after changing an entity or its configuration (run from the repository root — the local `dotnet-ef` tool manifest lives there):
   ```bash
-  dotnet tool run dotnet-ef migrations add <Name> --project Insan.Infrastructure --startup-project Insan.API --output-dir Persistence/Migrations
+  dotnet tool run dotnet-ef migrations add <Name> --project backend/Insan.Infrastructure --startup-project backend/Insan.API --output-dir Persistence/Migrations
   ```
 
 ---

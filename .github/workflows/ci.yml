@@ -20,13 +20,13 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore Insan.sln
+        run: dotnet restore backend/Insan.sln
 
       - name: Build solution
-        run: dotnet build Insan.sln --configuration Release --no-restore /warnaserror
+        run: dotnet build backend/Insan.sln --configuration Release --no-restore /warnaserror
 
       - name: Run tests
-        run: dotnet test Insan.sln --configuration Release --no-build --verbosity normal
+        run: dotnet test backend/Insan.sln --configuration Release --no-build --verbosity normal
 
   docker-build:
     runs-on: ubuntu-latest
@@ -37,4 +37,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate Insan.API Dockerfile builds
-        run: docker build -f Insan.API/Dockerfile -t insan-api:ci .
+        run: docker build -f backend/Insan.API/Dockerfile -t insan-api:ci backend
