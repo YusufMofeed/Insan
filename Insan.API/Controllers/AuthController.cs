@@ -25,4 +25,12 @@ public class AuthController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
+    {
+        var response = await _authService.RegisterAsync(request, cancellationToken);
+
+        return StatusCode(StatusCodes.Status201Created, response);
+    }
 }

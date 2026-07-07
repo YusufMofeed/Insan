@@ -14,8 +14,11 @@ public class JourneyService
         _unitOfWork = unitOfWork;
     }
 
-    public Task<Journey?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-        => _journeyRepository.GetByIdAsync(id, cancellationToken);
+    public async Task<Journey> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _journeyRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException($"Journey '{id}' was not found.");
+    }
 
     public Task<(IReadOnlyList<Journey> Items, int TotalCount)> GetAllAsync(
         int page,

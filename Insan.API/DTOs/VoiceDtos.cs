@@ -5,11 +5,6 @@ namespace Insan.API.DTOs;
 public class CreateVoiceRequest
 {
     public Guid JourneyId { get; set; }
-
-    // Temporary: no JWT-claims wiring yet for the acting user (same interim pattern as
-    // CreateJourneyRequest.CreatedBy). Replace with a value read from the token once auth is wired.
-    public Guid UserId { get; set; }
-
     public string AuthorName { get; set; } = string.Empty;
     public string Relationship { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;

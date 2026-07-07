@@ -11,6 +11,4 @@ public interface IRepository<T> where T : BaseEntity
     Task<IReadOnlyList<T>> GetAllAsync(CancellationToken cancellationToken = default);
 
     void Update(T entity);
-
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

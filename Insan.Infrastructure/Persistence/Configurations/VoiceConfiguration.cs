@@ -45,5 +45,8 @@ public class VoiceConfiguration : IEntityTypeConfiguration<Voice>
             .WithMany()
             .HasForeignKey(v => v.JourneyId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Soft delete: exclude soft-deleted Voices from all queries by default.
+        builder.HasQueryFilter(v => !v.IsDeleted);
     }
 }

@@ -37,9 +37,4 @@ public class BaseRepository<T> : IRepository<T> where T : BaseEntity
     {
         DbSet.Update(entity);
     }
-
-    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        return await Context.SaveChangesAsync(cancellationToken);
-    }
 }

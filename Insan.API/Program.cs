@@ -1,10 +1,26 @@
 using Insan.API;
+using Insan.API.HealthChecks;
+using Insan.API.Middlewares;
 using Insan.Application.Interfaces;
 using Insan.Application.Services;
 using Insan.Infrastructure;
+using Insan.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using Serilog.Events;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
@@ -15,6 +31,13 @@ builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddScoped<JourneyService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<VoiceService>();
+builder.Services.AddScoped<MemoryService>();
+builder.Services.AddScoped<StoryService>();
+builder.Services.AddScoped<LifeEventService>();
+
+builder.Services.AddHealthChecks()
+    .AddCheck("api", () => HealthCheckResult.Healthy("API is running."), tags: new[] { "live" })
+    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "ready" });
 
 builder.Services.AddControllers();
 
@@ -45,6 +68,12 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+await app.Services.MigrateDatabaseAsync();
+
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseSerilogRequestLogging();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -58,4 +87,33 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = HealthCheckResponseWriter.WriteResponse
+});
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live"),
+    ResponseWriter = HealthCheckResponseWriter.WriteResponse
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = HealthCheckResponseWriter.WriteResponse
+});
+
+try
+{
+    Log.Information("Starting Insan API");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Insan API terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

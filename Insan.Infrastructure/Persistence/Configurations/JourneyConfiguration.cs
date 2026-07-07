@@ -43,5 +43,8 @@ public class JourneyConfiguration : IEntityTypeConfiguration<Journey>
             .WithMany(u => u.Journeys)
             .HasForeignKey(j => j.CreatedBy)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Soft delete: exclude archived Journeys from all queries by default.
+        builder.HasQueryFilter(j => !j.IsDeleted);
     }
 }

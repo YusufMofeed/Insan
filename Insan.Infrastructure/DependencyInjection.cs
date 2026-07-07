@@ -23,6 +23,9 @@ public static class DependencyInjection
         services.AddScoped<IJourneyRepository, JourneyRepository>();
         services.AddScoped<IVoiceRepository, VoiceRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IMemoryRepository, MemoryRepository>();
+        services.AddScoped<IStoryRepository, StoryRepository>();
+        services.AddScoped<ILifeEventRepository, LifeEventRepository>();
 
         services.AddScoped<IJwtTokenGenerator, JwtTokenService>();
 

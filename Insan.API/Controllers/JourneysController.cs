@@ -59,9 +59,6 @@ public class JourneysController : ControllerBase
     {
         var journey = await _journeyService.GetByIdAsync(id, cancellationToken);
 
-        if (journey is null)
-            return NotFound();
-
         return Ok(JourneyResponse.FromEntity(journey));
     }
 
@@ -69,39 +66,26 @@ public class JourneysController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateJourneyRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var journey = await _journeyService.UpdateAsync(
-                id,
-                request.FullName,
-                request.City,
-                request.Occupation,
-                request.Biography,
-                request.Nickname,
-                request.BirthDate,
-                request.MartyrdomDate,
-                cancellationToken);
+        var journey = await _journeyService.UpdateAsync(
+            id,
+            request.FullName,
+            request.City,
+            request.Occupation,
+            request.Biography,
+            request.Nickname,
+            request.BirthDate,
+            request.MartyrdomDate,
+            cancellationToken);
 
-            return Ok(JourneyResponse.FromEntity(journey));
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        return Ok(JourneyResponse.FromEntity(journey));
     }
 
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        try
-        {
-            await _journeyService.DeleteAsync(id, cancellationToken);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        await _journeyService.DeleteAsync(id, cancellationToken);
+
+        return NoContent();
     }
 }
