@@ -1,0 +1,52 @@
+/*
+ * Landing page — page-specific styles only.
+ * Reuses .container/.section/.grid from layout.css and .btn/.card from
+ * components.css; nothing global is redeclared here.
+ */
+
+.hero {
+  background-color: var(--color-surface);
+}
+
+.hero__container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: 640px;
+  text-align: center;
+}
+
+.hero__title {
+  margin: 0;
+}
+
+.hero__description {
+  color: var(--color-text-secondary);
+}
+
+.hero__cta {
+  margin-top: var(--space-2);
+}
+
+.explanation__heading {
+  margin-bottom: var(--space-8);
+  text-align: center;
+}
+
+.explanation__grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.cta-section {
+  background-color: var(--color-background);
+}
+
+.cta-section__container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 480px;
+  text-align: center;
+}

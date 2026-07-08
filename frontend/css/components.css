@@ -1,0 +1,449 @@
+/*
+ * Reusable UI components, per frontend/docs/02-ui-design-system.md.
+ *
+ * Component styles are added incrementally as each component is actually
+ * built. The section order follows the design system document. Sections
+ * with no components yet stay as empty markers until that component exists.
+ *
+ * Transition durations below are literal values (150-250ms, per Section 19)
+ * rather than a variable — timing wasn't part of the token set defined in
+ * variables.css (colors, spacing, radius, shadows, typography only).
+ */
+
+/* Buttons — 02-ui-design-system.md Section 8 */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 44px;
+  padding-inline: var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-button);
+  font-weight: var(--font-weight-button);
+  line-height: var(--line-height-button);
+  white-space: nowrap;
+  transition: background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
+}
+
+.btn--primary {
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.btn--secondary {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background-color: var(--color-background);
+}
+
+.btn--danger {
+  background-color: var(--color-danger);
+  color: var(--color-surface);
+}
+
+.btn--danger:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn--ghost {
+  background-color: transparent;
+  color: var(--color-primary);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background-color: var(--color-background);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+}
+
+/* Forms — 02-ui-design-system.md Section 9 */
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.input-group__label {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-h4);
+  color: var(--color-text);
+}
+
+.input-group__input {
+  height: 44px;
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-body);
+  transition: border-color 150ms ease;
+}
+
+.input-group__input:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.input-group__input--error {
+  border-color: var(--color-danger);
+}
+
+.input-group__input:disabled {
+  background-color: var(--color-background);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+.input-group__error {
+  font-size: var(--font-size-caption);
+  color: var(--color-danger);
+}
+
+/* Cards — 02-ui-design-system.md Section 10 */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+
+.card--interactive:hover {
+  box-shadow: var(--shadow-dropdown);
+  transform: translateY(-2px);
+}
+
+.card__title {
+  margin: 0;
+}
+
+.card__content {
+  color: var(--color-text-secondary);
+}
+
+.card__actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* Navigation — 02-ui-design-system.md Section 11 */
+
+.navbar {
+  position: relative;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.navbar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--space-3);
+}
+
+.navbar__brand {
+  font-size: var(--font-size-h4);
+  font-weight: var(--font-weight-h3);
+  color: var(--color-text);
+}
+
+.navbar__toggle {
+  display: inline-flex;
+  font-size: var(--font-size-h3);
+}
+
+.navbar__menu {
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  padding: var(--space-4);
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.navbar__menu--open {
+  display: flex;
+}
+
+.navbar__links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.navbar__link {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-h4);
+}
+
+.navbar__link:hover {
+  color: var(--color-primary);
+}
+
+.navbar__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .navbar__toggle {
+    display: none;
+  }
+
+  .navbar__menu {
+    display: flex;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-6);
+    padding: 0;
+    background: none;
+    border: none;
+  }
+
+  .navbar__links {
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+  }
+
+  .navbar__actions {
+    flex-direction: row;
+    align-items: center;
+    width: auto;
+  }
+}
+
+/* User identity components — 02-ui-design-system.md Section 12 */
+
+/* Timeline — 02-ui-design-system.md Section 13 */
+
+/* Media components — 02-ui-design-system.md Section 14 */
+
+/* Feedback components — 02-ui-design-system.md Section 15 */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background-color: rgba(17, 24, 39, 0.5);
+  z-index: 100;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-6);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-modal);
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.modal__title {
+  margin: 0;
+}
+
+.modal__close {
+  font-size: var(--font-size-h2);
+  line-height: 1;
+  color: var(--color-text-secondary);
+}
+
+.modal__close:hover {
+  color: var(--color-text);
+}
+
+.modal__body {
+  color: var(--color-text);
+}
+
+.toast-container {
+  position: fixed;
+  bottom: var(--space-6);
+  inset-inline-end: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  z-index: 200;
+}
+
+.toast {
+  max-width: 320px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-dropdown);
+  color: var(--color-surface);
+  font-size: var(--font-size-body);
+}
+
+.toast--success {
+  background-color: var(--color-success);
+}
+
+.toast--error {
+  background-color: var(--color-danger);
+}
+
+.toast--warning {
+  background-color: var(--color-warning);
+}
+
+.toast--info {
+  background-color: var(--color-primary);
+}
+
+.spinner {
+  display: inline-block;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+.spinner--sm {
+  width: 16px;
+  height: 16px;
+}
+
+.spinner--md {
+  width: 20px;
+  height: 20px;
+}
+
+.spinner--lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1500ms;
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8);
+}
+
+.loading-container__message {
+  color: var(--color-text-secondary);
+}
+
+.empty-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-4);
+}
+
+.empty-state__title {
+  color: var(--color-text);
+}
+
+.empty-state__description {
+  color: var(--color-text-secondary);
+}
+
+.error-state__message {
+  color: var(--color-danger);
+}
+
+/* Footer — not explicitly listed in 02-ui-design-system.md's component
+   catalog, but is a reusable structural component like Navbar, so it
+   lives here rather than in a page-specific stylesheet. */
+
+.footer {
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  padding-block: var(--space-8);
+}
+
+.footer__container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.footer__links {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.footer__links a {
+  color: var(--color-text-secondary);
+}
+
+.footer__links a:hover {
+  color: var(--color-primary);
+}
+
+.footer__copyright {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
