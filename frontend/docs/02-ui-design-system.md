@@ -1,6 +1,6 @@
 # INSAN
 
-> Version: 1.0
+> Version: 1.1
 > Document: 02-ui-design-system.md
 > Status: Approved
 
@@ -128,7 +128,7 @@ Font stack: `'Inter', 'Cairo', -apple-system, BlinkMacSystemFont, sans-serif`
 - **Container** — centers content and caps it at the 1100px maximum width, with horizontal padding of `--space-4` on mobile and `--space-6` on larger screens.
 - **Sections** — vertical rhythm between sections uses `--space-12` or `--space-16`; content within a section uses the smaller values.
 - **Cards** — internal padding uses `--space-4` to `--space-6`; see Section 10.
-- **Grid layouts** — used for collections (Memories, Journey listings). Column gap and row gap both use the spacing scale, never a custom value. Grids collapse to a single column on mobile (Section 16).
+- **Grid layouts** — used for collections (Memories, Journey listings). Column gap and row gap both use the spacing scale, never a custom value. Grids collapse to a single column on mobile (Section 17).
 
 ---
 
@@ -203,7 +203,7 @@ Four button variants exist. No ad-hoc button styles are permitted outside these 
 
 - Every input has a clear, visible label — placeholder text is never a substitute for a label.
 - Errors are specific and helpful ("Email is required" rather than "Invalid input").
-- Forms are fully operable via keyboard and screen reader (see Section 18).
+- Forms are fully operable via keyboard and screen reader (see Section 19).
 
 ---
 
@@ -215,7 +215,7 @@ A single reusable card style is used across all content types: Journey cards, Vo
 - **Border:** 1px solid `--color-border`
 - **Radius:** `--radius-md`
 - **Shadow:** `--shadow-card`
-- **Hover behavior:** subtle lift — shadow shifts toward `--shadow-dropdown` and the card offsets slightly upward; transition follows Section 19's timing rules. Non-interactive cards (e.g. inside a read-only timeline) do not use hover behavior.
+- **Hover behavior:** subtle lift — shadow shifts toward `--shadow-dropdown` and the card offsets slightly upward; transition follows Section 20's timing rules. Non-interactive cards (e.g. inside a read-only timeline) do not use hover behavior.
 
 ---
 
@@ -251,7 +251,7 @@ Life Events are presented as a timeline.
 - **Timeline structure** — a vertical line connecting ordered event markers, each anchored to a card containing the event's title, description, and optional image. Order follows `DisplayOrder`, per the backend contract.
 - **Date display** — dates are shown in a consistent, human-readable format aligned to each marker; when a year alone is meaningful, month/day may be de-emphasized using `--color-text-secondary`.
 - **Image handling** — event images follow the Media Components rules (Section 14); an event without an image simply omits the image slot rather than showing a placeholder.
-- **Mobile behavior** — the vertical line and markers remain in a single column on all screen sizes (Section 16); spacing tightens using the smaller values of the spacing scale.
+- **Mobile behavior** — the vertical line and markers remain in a single column on all screen sizes (Section 17); spacing tightens using the smaller values of the spacing scale.
 
 ---
 
@@ -282,7 +282,25 @@ Life Events are presented as a timeline.
 
 ---
 
-# 16. Responsive Rules
+# 16. Table
+
+**Purpose:** Display tabular administrative data.
+
+**Features:**
+
+- Responsive horizontal scrolling — the table scrolls within its own container on narrow viewports rather than breaking the page layout (Section 17).
+- Header row — column labels use `--color-text-secondary`, distinguishing them from body content, consistent with captions/meta text elsewhere (Section 3).
+- Empty state support — a table with no rows defers to the shared Empty State (Section 15) rather than rendering a blank grid.
+- Optional actions column — a trailing column for row-level actions (e.g. Edit, Delete), aligned to the end of the row.
+
+**Styling:**
+
+- Uses existing spacing, border, and color tokens (Section 3, Section 5) — cell padding from the spacing scale, row dividers in `--color-border`, header text in `--color-text-secondary`.
+- No new design tokens introduced.
+
+---
+
+# 17. Responsive Rules
 
 | Breakpoint | Range |
 |---|---|
@@ -296,7 +314,7 @@ Components adapt primarily through layout (grid columns collapsing, navigation s
 
 ---
 
-# 17. RTL Support
+# 18. RTL Support
 
 The platform supports Arabic.
 
@@ -307,7 +325,7 @@ The platform supports Arabic.
 
 ---
 
-# 18. Accessibility
+# 19. Accessibility
 
 - **Contrast** — text meets WCAG AA: at least 4.5:1 for body text, 3:1 for large text (18px+ bold or 24px+ regular). The defined color pairs in Section 3 are chosen to satisfy this against their intended backgrounds.
 - **Focus states** — every interactive element has a visible focus indicator; focus is never suppressed.
@@ -316,7 +334,7 @@ The platform supports Arabic.
 
 ---
 
-# 19. Animation Rules
+# 20. Animation Rules
 
 Animations are subtle and purposeful — they clarify a transition, never entertain.
 
@@ -335,7 +353,7 @@ Transitions are short (roughly 150–250ms) and respect the user's `prefers-redu
 
 ---
 
-# 20. Design Consistency Rules
+# 21. Design Consistency Rules
 
 Every new component must:
 
