@@ -1,0 +1,30 @@
+/*
+ * Admin Dashboard page — page-specific styles only.
+ * Reuses .section/.container/.grid from layout.css and .card/.table/.badge
+ * from components.css; nothing global is redeclared here.
+ */
+
+.admin-dashboard__title {
+  margin: 0 0 var(--space-2);
+}
+
+.admin-dashboard__description {
+  margin: 0 0 var(--space-8);
+  color: var(--color-text-secondary);
+}
+
+.admin-dashboard__stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin-bottom: var(--space-8);
+}
+
+.stat-card__count {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-h2);
+}
+
+.admin-dashboard__section-heading {
+  margin: 0 0 var(--space-4);
+}

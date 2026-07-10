@@ -1,0 +1,174 @@
+/*
+ * Journey Details page — page-specific styles only.
+ * Reuses .section/.container/.grid from layout.css and .card/.btn from
+ * components.css; nothing global is redeclared here.
+ */
+
+.journey-header {
+  display: flex;
+  gap: var(--space-6);
+  align-items: flex-start;
+  margin-bottom: var(--space-8);
+}
+
+.journey-header__avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-h2);
+}
+
+.journey-header__name {
+  margin: 0 0 var(--space-1);
+}
+
+.journey-header__meta {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.journey-header__bio {
+  max-width: 640px;
+  margin: 0;
+}
+
+.journey-details__tablist {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  margin-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.journey-details__tab {
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-h4);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.journey-details__tab:hover {
+  color: var(--color-text);
+}
+
+.journey-details__tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.journey-details__grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+/* Voice cards */
+.voice-card__relationship {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.voice-card__text {
+  margin: 0 0 var(--space-3);
+}
+
+.voice-card__meta {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+/* Memory cards */
+.memory-card__image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--color-border), var(--color-background));
+}
+
+.memory-card__caption {
+  margin: 0 0 var(--space-1);
+}
+
+.memory-card__date {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+/* Story cards */
+.story-card__author {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.story-card__excerpt {
+  margin: 0;
+}
+
+/* Life Events timeline */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline__item {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.timeline__date {
+  margin: 0;
+  padding-top: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+@media (max-width: 640px) {
+  .timeline__item {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Gallery grid */
+.gallery-grid {
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+.gallery-tile {
+  margin: 0;
+}
+
+.gallery-tile__image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--color-border), var(--color-background));
+}
+
+.gallery-tile__caption {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}

@@ -247,6 +247,37 @@
 
 /* User identity components — 02-ui-design-system.md Section 12 */
 
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-h4);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.badge--neutral {
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.badge--success {
+  background-color: var(--color-success);
+  color: var(--color-surface);
+}
+
+.badge--warning {
+  background-color: var(--color-warning);
+  color: var(--color-surface);
+}
+
+.badge--danger {
+  background-color: var(--color-danger);
+  color: var(--color-surface);
+}
+
 /* Timeline — 02-ui-design-system.md Section 13 */
 
 /* Media components — 02-ui-design-system.md Section 14 */
@@ -303,6 +334,17 @@
 
 .modal__body {
   color: var(--color-text);
+}
+
+.confirm-dialog__message {
+  margin: 0 0 var(--space-4);
+  color: var(--color-text-secondary);
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }
 
 .toast-container {
@@ -446,4 +488,48 @@
 .footer__copyright {
   color: var(--color-text-secondary);
   font-size: var(--font-size-caption);
+}
+
+/* Table — not explicitly listed in 02-ui-design-system.md's component
+   catalog today (flagged in js/components/Table.js's own header comment);
+   styling below reuses only already-defined tokens. */
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-body);
+}
+
+.table__caption {
+  margin-bottom: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  text-align: start;
+}
+
+.table th,
+.table td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  text-align: start;
+}
+
+.table th {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-h4);
+  white-space: nowrap;
+}
+
+.table td {
+  color: var(--color-text);
+}
+
+.table__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }

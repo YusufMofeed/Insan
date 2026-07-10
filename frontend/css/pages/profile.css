@@ -1,0 +1,63 @@
+/*
+ * Profile page — page-specific styles only.
+ * Reuses .section/.container/.grid from layout.css and .card from
+ * components.css; nothing global is redeclared here.
+ */
+
+.profile-page__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+}
+
+.profile-page__avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-h2);
+}
+
+.profile-page__name {
+  margin: 0 0 var(--space-2);
+}
+
+.profile-page__role {
+  display: inline-block;
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-background);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-button);
+}
+
+.profile-page__email,
+.profile-page__meta {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.profile-page__section-heading {
+  margin: 0 0 var(--space-4);
+}
+
+.profile-page__contributions-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.contribution-card__count {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-h2);
+}
