@@ -1,0 +1,27 @@
+/*
+ * Admin Journeys page — page-specific styles only.
+ * Reuses .section/.container from layout.css and .table/.badge/.btn from
+ * components.css; nothing global is redeclared here.
+ */
+
+.admin-journeys__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.admin-journeys__title {
+  margin: 0 0 var(--space-2);
+}
+
+.admin-journeys__description {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.admin-journeys__create {
+  flex-shrink: 0;
+}

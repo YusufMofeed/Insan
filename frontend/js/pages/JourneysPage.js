@@ -1,56 +1,39 @@
 // Journeys Feed page. frontend/docs/04-pages-specification.md Section 3
-// (Journeys Feed Page). Returns this page's own content only — MainLayout
-// (Navbar/Footer) is composed around it by routes.js, not by this file.
+// (Journeys Feed Page) and frontend/docs/06-page-implementation-rules.md.
+// Returns this page's own content only — MainLayout (Navbar/Footer) is
+// composed around it by routes.js, not by this file.
 //
-// No API calls, no authentication, no services (frontend/docs/03-project-
-// structure.md Section 8: pages talk to services/api, never fetch()
-// directly — there is nothing to call yet). Journeys are static mock data
-// for now, shaped like the backend's real JourneyResponse (id, fullName,
-// city, occupation, biography, createdAt — see backend/Insan.API/DTOs/
-// JourneyDtos.cs) so wiring real data in later is a drop-in replacement,
-// not a restructure.
+// Integrated with the real backend: GET /api/journeys, via
+// journeyService (06 Section 4: Page → Service layer → apiClient →
+// Backend API — this page never imports journeyApi.js or apiClient
+// directly).
 //
-// One exception: the real JourneyResponse has no "creator" field today —
-// there is no `/users/me`-style lookup, and the backend doesn't return who
-// created a Journey. `creatorName` below is included because the card spec
-// requires creator info; it's mock-only until the backend adds that field.
+// The real JourneyResponse has no "creator" field (confirmed against
+// backend/Insan.API/DTOs/JourneyDtos.cs) — the previous mock version of
+// this page showed a fabricated creatorName; now that real data is wired
+// in, each card shows the fields that actually exist instead (occupation,
+// city, a biography excerpt).
+//
+// Pagination: GET /api/journeys returns { data, totalCount, page,
+// pageSize } (05-api-integration.md Section 9), but this task only wires
+// the first page of results — a Pagination control is a separate,
+// not-yet-requested feature. journeyService.getJourneys(params) already
+// accepts page/pageSize/search/city/occupation, so wiring one later is a
+// call-site change, not a restructure.
 
 import { createCard } from "../components/Card.js";
 import { createLoadingContainer } from "../components/Loading.js";
 import { createEmptyState } from "../components/EmptyState.js";
 import { createErrorState } from "../components/ErrorState.js";
 import { formatDate } from "../utils/formatDate.js";
+import { journeyService } from "../services/journeyService.js";
 
-const MOCK_JOURNEYS = [
-  {
-    id: "1",
-    title: "Ahmad Al-Sayed",
-    shortDescription: "A civil engineer from Aleppo, remembered for rebuilding homes for families who had lost everything.",
-    creatorName: "Sara Al-Sayed",
-    createdAt: "2026-02-14T10:00:00Z",
-  },
-  {
-    id: "2",
-    title: "Layla Hassan",
-    shortDescription: "A schoolteacher from Homs who spent two decades teaching children to read and write.",
-    creatorName: "Omar Hassan",
-    createdAt: "2026-03-02T10:00:00Z",
-  },
-  {
-    id: "3",
-    title: "Youssef Khalil",
-    shortDescription: "A fisherman from Latakia, known across his village for his generosity and quiet humor.",
-    creatorName: "Mariam Khalil",
-    createdAt: "2026-04-18T10:00:00Z",
-  },
-  {
-    id: "4",
-    title: "Rana Ibrahim",
-    shortDescription: "A nurse from Damascus who cared for her neighbors long before it became her profession.",
-    creatorName: "Fadi Ibrahim",
-    createdAt: "2026-05-27T10:00:00Z",
-  },
-];
+function truncate(text, maxLength) {
+  if (!text || text.length <= maxLength) {
+    return text || "";
+  }
+  return `${text.slice(0, maxLength).trimEnd()}…`;
+}
 
 function createJourneysHeader() {
   const header = document.createElement("header");
@@ -75,11 +58,13 @@ function createJourneyCard(journey) {
 
   const description = document.createElement("p");
   description.className = "journey-card__description";
-  description.textContent = journey.shortDescription;
+  description.textContent = truncate(journey.biography, 140);
 
   const meta = document.createElement("p");
   meta.className = "journey-card__meta";
-  meta.textContent = `Added by ${journey.creatorName} · ${formatDate(journey.createdAt)}`;
+  const metaParts = [journey.occupation, journey.city].filter(Boolean);
+  metaParts.push(formatDate(journey.createdAt));
+  meta.textContent = metaParts.join(" · ");
 
   content.append(description, meta);
 
@@ -89,7 +74,7 @@ function createJourneyCard(journey) {
   viewLink.textContent = "View Journey";
 
   return createCard({
-    title: journey.title,
+    title: journey.fullName,
     content,
     actions: [viewLink],
     interactive: true,
@@ -104,31 +89,40 @@ function createJourneysGrid(journeys) {
 }
 
 /**
- * Renders the Journeys list for a given state — "loading", an Error, or a
- * (possibly empty) array of journeys. Once the API layer exists, a future
- * caller passes whatever state a real request is actually in; this page
- * currently only ever calls it with the mock array below (Section 4: no
- * API calls yet), but the loading/empty/error branches are already wired
- * to their respective components so that swap is a data change, not a
- * structural one.
+ * Fetches journeys and renders the result into `contentContainer` — the
+ * page's own element, updated in place once the request settles (06
+ * Section 2: direct DOM manipulation is fine on elements the page itself
+ * created). Called again by the ErrorState's retry action, so a failed
+ * request isn't a dead end.
  */
-function createJourneysState(state) {
-  if (state === "loading") {
-    return createLoadingContainer({ message: "Loading journeys…" });
-  }
+function loadJourneys(contentContainer) {
+  contentContainer.replaceChildren(createLoadingContainer({ message: "Loading journeys…" }));
 
-  if (state instanceof Error) {
-    return createErrorState({ message: state.message });
-  }
+  journeyService
+    .getJourneys()
+    .then((response) => {
+      const journeys = response.data;
 
-  if (state.length === 0) {
-    return createEmptyState({
-      title: "No journeys yet",
-      description: "Journeys will appear here once they're added to Insan.",
+      if (journeys.length === 0) {
+        contentContainer.replaceChildren(
+          createEmptyState({
+            title: "No journeys yet",
+            description: "Journeys will appear here once they're added to Insan.",
+          })
+        );
+        return;
+      }
+
+      contentContainer.replaceChildren(createJourneysGrid(journeys));
+    })
+    .catch((error) => {
+      contentContainer.replaceChildren(
+        createErrorState({
+          message: error.message,
+          onRetry: () => loadJourneys(contentContainer),
+        })
+      );
     });
-  }
-
-  return createJourneysGrid(state);
 }
 
 export function createJourneysPage() {
@@ -138,8 +132,14 @@ export function createJourneysPage() {
 
   const container = document.createElement("div");
   container.className = "container";
-  container.append(createJourneysHeader(), createJourneysState(MOCK_JOURNEYS));
 
+  const content = document.createElement("div");
+  content.className = "journeys-page__content";
+
+  container.append(createJourneysHeader(), content);
   section.appendChild(container);
+
+  loadJourneys(content);
+
   return section;
 }

@@ -3,15 +3,20 @@
 // Returns this page's own content only — MainLayout (Navbar/Footer) is
 // composed around it by routes.js (06 Section 3).
 //
-// No API calls, no authentication, no services (06 Section 4) — every tab
-// uses static mock data shaped like the backend's real DTOs (Voice, Memory,
-// Story, LifeEvent), so wiring real data in later is a drop-in replacement,
-// not a restructure, matching the precedent set by JourneysPage.js.
+// Integrated with the real backend: GET /api/journeys/{id} for the header,
+// and GET /api/journeys/{id}/{voices,memories,stories,lifeevents} for each
+// tab — all via their respective services (06 Section 4: Page → Service
+// layer → apiClient → Backend API; this page never imports an api/ module
+// or apiClient directly). "Gallery" has no backend endpoint of its own —
+// it's a photo-grid presentation of the same Memories data, sharing that
+// tab's cached fetch rather than requesting it twice.
 //
-// The route's `:id` param is available to the route handler in routes.js,
-// but this page doesn't take it as an argument or use it to select between
-// mock profiles — there is exactly one representative mock Journey today,
-// since there is no real data source yet to look one up from (06 Section 4).
+// Per 04's explicit rule ("each section loads and handles its own
+// loading/empty/error state independently — a failure in one section must
+// not block the others from rendering"): each tab fetches lazily, once,
+// the first time it's activated (the default tab fetches on page load),
+// and caches its result so revisiting a tab doesn't re-fetch. A failed
+// fetch clears that tab's cache so its ErrorState's retry tries again.
 //
 // Tab switching is local page state (06 Section 5): an `activeKey` value
 // held in this module's closure, never reflected in the URL or the Router.
@@ -21,77 +26,61 @@ import { createLoadingContainer } from "../components/Loading.js";
 import { createEmptyState } from "../components/EmptyState.js";
 import { createErrorState } from "../components/ErrorState.js";
 import { formatDate } from "../utils/formatDate.js";
+import { journeyService } from "../services/journeyService.js";
+import { voiceService } from "../services/voiceService.js";
+import { memoryService } from "../services/memoryService.js";
+import { storyService } from "../services/storyService.js";
+import { lifeEventService } from "../services/lifeEventService.js";
 
-const MOCK_JOURNEY = {
-  fullName: "Ahmad Al-Sayed",
-  nickname: "Abu Khalid",
-  city: "Aleppo",
-  occupation: "Civil Engineer",
-  birthDate: "1985-03-12T00:00:00Z",
-  martyrdomDate: "2016-09-04T00:00:00Z",
-  biography:
-    "Ahmad spent his career rebuilding homes for families who had lost everything, and was known across his neighborhood for never turning away someone in need.",
-};
-
-const MOCK_VOICES = [
-  {
-    id: "v1",
-    authorName: "Sara Al-Sayed",
-    relationship: "Sister",
-    content: "He always made time for us, no matter how busy work got.",
-    createdAt: "2026-01-10T00:00:00Z",
-  },
-  {
-    id: "v2",
-    authorName: "Khalid Rahman",
-    relationship: "Colleague",
-    content: "The most patient engineer I ever worked alongside.",
-    createdAt: "2026-02-03T00:00:00Z",
-  },
-];
-
-const MOCK_MEMORIES = [
-  { id: "m1", caption: "At the community center opening, 2014", createdAt: "2014-06-01T00:00:00Z" },
-  { id: "m2", caption: "Family gathering, spring 2015", createdAt: "2015-04-20T00:00:00Z" },
-  { id: "m3", caption: "On site, final housing project", createdAt: "2016-05-15T00:00:00Z" },
-];
-
-const MOCK_STORIES = [
-  {
-    id: "s1",
-    title: "The Winter Rebuild",
-    authorName: "Sara Al-Sayed",
-    content:
-      "In the winter of 2014, Ahmad organized a team of volunteers to rebuild twelve homes before the cold set in — working through the night more than once.",
-  },
-];
-
-// Deliberately empty — exercises the Life Events tab's Empty-state branch
-// in a real render, so all four states (06 Section 6) aren't just present
-// in the code but actually verified live, not only the populated ones.
-const MOCK_LIFE_EVENTS = [];
+function createCachedLoader(fetchFn) {
+  let promise = null;
+  return {
+    load() {
+      if (!promise) {
+        promise = fetchFn();
+      }
+      return promise;
+    },
+    reset() {
+      promise = null;
+    },
+  };
+}
 
 /**
- * Renders a tab's content for a given state — "loading", an Error, or a
- * (possibly empty) array. Every tab already knows how to handle all four
- * states even though this page only ever calls it with mock arrays (06
- * Section 4: no API calls yet) — swapping in a real request later is a
- * data change, not a structural one, matching JourneysPage's pattern.
+ * Fetches via `loader` and renders the result into `container` — the
+ * page's own element, updated in place once the request settles (06
+ * Section 2). `isStillRelevant` guards against a stale response landing
+ * after the user has already switched to a different tab (the tab panel
+ * is a single shared container, reused across tabs).
  */
-function createTabState(state, { renderContent, emptyTitle, emptyDescription }) {
-  if (state === "loading") {
-    return createLoadingContainer({ message: "Loading…" });
-  }
+function renderSectionState(container, loader, isStillRelevant, { renderContent, emptyTitle, emptyDescription }) {
+  container.replaceChildren(createLoadingContainer({ message: "Loading…" }));
 
-  if (state instanceof Error) {
-    return createErrorState({ message: state.message });
-  }
-
-  if (state.length === 0) {
-    return createEmptyState({ title: emptyTitle, description: emptyDescription });
-  }
-
-  return renderContent(state);
+  loader
+    .load()
+    .then((items) => {
+      if (!isStillRelevant()) {
+        return;
+      }
+      if (items.length === 0) {
+        container.replaceChildren(createEmptyState({ title: emptyTitle, description: emptyDescription }));
+        return;
+      }
+      container.replaceChildren(renderContent(items));
+    })
+    .catch((error) => {
+      if (!isStillRelevant()) {
+        return;
+      }
+      loader.reset();
+      container.replaceChildren(
+        createErrorState({
+          message: error.message,
+          onRetry: () => renderSectionState(container, loader, isStillRelevant, { renderContent, emptyTitle, emptyDescription }),
+        })
+      );
+    });
 }
 
 function createCardGrid(items, createItemCard) {
@@ -121,11 +110,13 @@ function createVoiceCard(voice) {
   return createCard({ title: voice.authorName, content });
 }
 
-function createMemoryImagePlaceholder() {
-  const placeholder = document.createElement("div");
-  placeholder.className = "memory-card__image";
-  placeholder.setAttribute("aria-hidden", "true");
-  return placeholder;
+function createMemoryImage(memory) {
+  const image = document.createElement("img");
+  image.className = "memory-card__image";
+  image.src = memory.url;
+  image.alt = memory.caption || "";
+  image.loading = "lazy";
+  return image;
 }
 
 function createMemoryCard(memory) {
@@ -138,9 +129,9 @@ function createMemoryCard(memory) {
 
   const date = document.createElement("p");
   date.className = "memory-card__date";
-  date.textContent = formatDate(memory.createdAt);
+  date.textContent = formatDate(memory.uploadedAt);
 
-  content.append(createMemoryImagePlaceholder(), caption, date);
+  content.append(createMemoryImage(memory), caption, date);
   return createCard({ content });
 }
 
@@ -150,7 +141,7 @@ function createStoryCard(story) {
 
   const author = document.createElement("p");
   author.className = "story-card__author";
-  author.textContent = `By ${story.authorName}`;
+  author.textContent = `By ${story.authorName} · ${formatDate(story.createdAt)}`;
 
   const excerpt = document.createElement("p");
   excerpt.className = "story-card__excerpt";
@@ -168,7 +159,24 @@ function createLifeEventItem(event) {
   date.className = "timeline__date";
   date.textContent = formatDate(event.eventDate);
 
-  const card = createCard({ title: event.title, content: event.description });
+  const cardContent = document.createElement("div");
+
+  // An event without an image simply omits the image slot, per
+  // 02-ui-design-system.md Section 13 — not a placeholder.
+  if (event.imageUrl) {
+    const image = document.createElement("img");
+    image.className = "timeline__image";
+    image.src = event.imageUrl;
+    image.alt = event.title;
+    image.loading = "lazy";
+    cardContent.appendChild(image);
+  }
+
+  const description = document.createElement("p");
+  description.textContent = event.description;
+  cardContent.appendChild(description);
+
+  const card = createCard({ title: event.title, content: cardContent });
   card.classList.add("timeline__card");
 
   item.append(date, card);
@@ -176,9 +184,14 @@ function createLifeEventItem(event) {
 }
 
 function createLifeEventsTimeline(events) {
+  // Ordered by DisplayOrder ascending (04-pages-specification.md Section
+  // 3) — sorted client-side as a safety net regardless of the backend's
+  // own ordering guarantee.
+  const orderedEvents = [...events].sort((a, b) => a.displayOrder - b.displayOrder);
+
   const list = document.createElement("ol");
   list.className = "timeline";
-  events.forEach((event) => list.appendChild(createLifeEventItem(event)));
+  orderedEvents.forEach((event) => list.appendChild(createLifeEventItem(event)));
   return list;
 }
 
@@ -186,9 +199,11 @@ function createGalleryTile(memory) {
   const figure = document.createElement("figure");
   figure.className = "gallery-tile";
 
-  const image = document.createElement("div");
+  const image = document.createElement("img");
   image.className = "gallery-tile__image";
-  image.setAttribute("aria-hidden", "true");
+  image.src = memory.url;
+  image.alt = memory.caption || "";
+  image.loading = "lazy";
 
   const caption = document.createElement("figcaption");
   caption.className = "gallery-tile__caption";
@@ -205,59 +220,6 @@ function createGalleryGrid(memories) {
   return grid;
 }
 
-const TABS = [
-  {
-    key: "voices",
-    label: "Voices",
-    render: () =>
-      createTabState(MOCK_VOICES, {
-        renderContent: (voices) => createCardGrid(voices, createVoiceCard),
-        emptyTitle: "No voices yet",
-        emptyDescription: "Testimonies shared about this journey will appear here once approved.",
-      }),
-  },
-  {
-    key: "memories",
-    label: "Memories",
-    render: () =>
-      createTabState(MOCK_MEMORIES, {
-        renderContent: (memories) => createCardGrid(memories, createMemoryCard),
-        emptyTitle: "No memories yet",
-        emptyDescription: "Photos and moments shared for this journey will appear here.",
-      }),
-  },
-  {
-    key: "stories",
-    label: "Stories",
-    render: () =>
-      createTabState(MOCK_STORIES, {
-        renderContent: (stories) => createCardGrid(stories, createStoryCard),
-        emptyTitle: "No stories yet",
-        emptyDescription: "Written stories about this journey will appear here.",
-      }),
-  },
-  {
-    key: "life-events",
-    label: "Life Events",
-    render: () =>
-      createTabState(MOCK_LIFE_EVENTS, {
-        renderContent: createLifeEventsTimeline,
-        emptyTitle: "No life events yet",
-        emptyDescription: "This journey's timeline will appear here once events are added.",
-      }),
-  },
-  {
-    key: "gallery",
-    label: "Gallery",
-    render: () =>
-      createTabState(MOCK_MEMORIES, {
-        renderContent: createGalleryGrid,
-        emptyTitle: "No photos yet",
-        emptyDescription: "Photos from this journey's memories will appear here.",
-      }),
-  },
-];
-
 function createAvatar(fullName) {
   const avatar = document.createElement("div");
   avatar.className = "journey-header__avatar";
@@ -266,10 +228,10 @@ function createAvatar(fullName) {
   return avatar;
 }
 
-function createJourneyHeader(journey) {
-  const header = document.createElement("header");
-  header.className = "journey-header";
-  header.appendChild(createAvatar(journey.fullName));
+function createJourneyHeaderContent(journey) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "journey-header";
+  wrapper.appendChild(createAvatar(journey.fullName));
 
   const info = document.createElement("div");
   info.className = "journey-header__info";
@@ -291,11 +253,29 @@ function createJourneyHeader(journey) {
   bio.textContent = journey.biography;
 
   info.append(name, meta, bio);
-  header.appendChild(info);
-  return header;
+  wrapper.appendChild(info);
+  return wrapper;
 }
 
-function createTabsSection() {
+function loadJourneyHeader(container, journeyId) {
+  container.replaceChildren(createLoadingContainer({ message: "Loading journey…" }));
+
+  journeyService
+    .getJourneyById(journeyId)
+    .then((journey) => {
+      container.replaceChildren(createJourneyHeaderContent(journey));
+    })
+    .catch((error) => {
+      container.replaceChildren(
+        createErrorState({
+          message: error.message,
+          onRetry: () => loadJourneyHeader(container, journeyId),
+        })
+      );
+    });
+}
+
+function createTabsSection(journeyId) {
   const wrapper = document.createElement("div");
   wrapper.className = "journey-details__tabs-section";
 
@@ -308,14 +288,70 @@ function createTabsSection() {
   panel.className = "journey-details__panel";
   panel.setAttribute("role", "tabpanel");
 
-  let activeKey = TABS[0].key;
+  const voicesLoader = createCachedLoader(() => voiceService.getVoicesByJourney(journeyId));
+  const memoriesLoader = createCachedLoader(() => memoryService.getMemoriesByJourney(journeyId));
+  const storiesLoader = createCachedLoader(() => storyService.getStoriesByJourney(journeyId));
+  const lifeEventsLoader = createCachedLoader(() => lifeEventService.getLifeEventsByJourney(journeyId));
+
+  const tabs = [
+    {
+      key: "voices",
+      label: "Voices",
+      loader: voicesLoader,
+      renderContent: (voices) => createCardGrid(voices, createVoiceCard),
+      emptyTitle: "No voices yet",
+      emptyDescription: "Testimonies shared about this journey will appear here once approved.",
+    },
+    {
+      key: "memories",
+      label: "Memories",
+      loader: memoriesLoader,
+      renderContent: (memories) => createCardGrid(memories, createMemoryCard),
+      emptyTitle: "No memories yet",
+      emptyDescription: "Photos and moments shared for this journey will appear here.",
+    },
+    {
+      key: "stories",
+      label: "Stories",
+      loader: storiesLoader,
+      renderContent: (stories) => createCardGrid(stories, createStoryCard),
+      emptyTitle: "No stories yet",
+      emptyDescription: "Written stories about this journey will appear here.",
+    },
+    {
+      key: "life-events",
+      label: "Life Events",
+      loader: lifeEventsLoader,
+      renderContent: createLifeEventsTimeline,
+      emptyTitle: "No life events yet",
+      emptyDescription: "This journey's timeline will appear here once events are added.",
+    },
+    {
+      key: "gallery",
+      // Shares memoriesLoader with the Memories tab — same underlying
+      // data, so activating either one (in either order) only fetches
+      // /memories once.
+      label: "Gallery",
+      loader: memoriesLoader,
+      renderContent: createGalleryGrid,
+      emptyTitle: "No photos yet",
+      emptyDescription: "Photos from this journey's memories will appear here.",
+    },
+  ];
+
+  let activeKey = tabs[0].key;
 
   function renderPanel() {
-    const activeTab = TABS.find((tab) => tab.key === activeKey);
-    panel.replaceChildren(activeTab.render());
+    const tab = tabs.find((candidate) => candidate.key === activeKey);
+    const keyAtRequestTime = activeKey;
+    renderSectionState(panel, tab.loader, () => activeKey === keyAtRequestTime, {
+      renderContent: tab.renderContent,
+      emptyTitle: tab.emptyTitle,
+      emptyDescription: tab.emptyDescription,
+    });
   }
 
-  const tabButtons = TABS.map((tab) => {
+  const tabButtons = tabs.map((tab) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "journey-details__tab";
@@ -329,7 +365,7 @@ function createTabsSection() {
       }
       activeKey = tab.key;
       tabButtons.forEach((btn, index) => {
-        const isActive = TABS[index].key === activeKey;
+        const isActive = tabs[index].key === activeKey;
         btn.classList.toggle("journey-details__tab--active", isActive);
         btn.setAttribute("aria-selected", String(isActive));
       });
@@ -347,14 +383,22 @@ function createTabsSection() {
   return wrapper;
 }
 
-export function createJourneyDetailsPage() {
+/**
+ * @param {string} journeyId
+ */
+export function createJourneyDetailsPage(journeyId) {
   const section = document.createElement("section");
   section.className = "section journey-details";
   section.setAttribute("aria-labelledby", "journey-details-title");
 
   const container = document.createElement("div");
   container.className = "container";
-  container.append(createJourneyHeader(MOCK_JOURNEY), createTabsSection());
+
+  const headerContainer = document.createElement("div");
+  container.appendChild(headerContainer);
+  loadJourneyHeader(headerContainer, journeyId);
+
+  container.appendChild(createTabsSection(journeyId));
 
   section.appendChild(container);
   return section;

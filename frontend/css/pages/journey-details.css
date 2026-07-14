@@ -93,11 +93,13 @@
 
 /* Memory cards */
 .memory-card__image {
+  display: block;
   width: 100%;
   aspect-ratio: 4 / 3;
   margin-bottom: var(--space-3);
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--color-border), var(--color-background));
+  background-color: var(--color-background);
+  object-fit: cover;
 }
 
 .memory-card__caption {
@@ -145,6 +147,16 @@
   font-size: var(--font-size-caption);
 }
 
+.timeline__image {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 16 / 9;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
 @media (max-width: 640px) {
   .timeline__item {
     grid-template-columns: 1fr;
@@ -161,10 +173,12 @@
 }
 
 .gallery-tile__image {
+  display: block;
   width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--color-border), var(--color-background));
+  background-color: var(--color-background);
+  object-fit: cover;
 }
 
 .gallery-tile__caption {

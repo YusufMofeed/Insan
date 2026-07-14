@@ -6,7 +6,7 @@
 
 const DEVELOPMENT_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
 
-const DEVELOPMENT_API_BASE_URL = "http://localhost:5000/api";
+const DEVELOPMENT_API_BASE_URL = "http://localhost:5200/api";
 const PRODUCTION_API_BASE_URL = "/api";
 
 export const API_BASE_URL = DEVELOPMENT_HOSTNAMES.has(window.location.hostname)
