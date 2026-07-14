@@ -6,26 +6,18 @@
 // routes.js (06 Section 10) — this page does not check authentication
 // itself.
 //
-// No API calls, no services (06 Section 4) — there is no `/users/me`
-// endpoint on the backend yet (04-pages-specification.md Section 8), so
-// the whole profile — avatar, name, email, role, contributions — is mock
-// data, not only the Contributions counts. Once `/users/me` exists, `role`
-// (and the user id) should come from `authState.currentUser` (06 Section 8
-// permits a page reading it for display) and only the fields `/users/me`
-// doesn't cover would stay mocked.
+// Integrated with the real backend: GET /api/users/me for the header
+// (avatar, name, email, role, member-since), via userService (06 Section
+// 4: Page → Service layer → apiClient → Backend API; this page never
+// imports userApi.js or apiClient directly). Contributions still has no
+// backend endpoint, so that section remains mock data only.
 
 import { createCard } from "../components/Card.js";
 import { createLoadingContainer } from "../components/Loading.js";
 import { createEmptyState } from "../components/EmptyState.js";
 import { createErrorState } from "../components/ErrorState.js";
 import { formatDate } from "../utils/formatDate.js";
-
-const MOCK_USER = {
-  fullName: "Nour Haddad",
-  email: "nour.haddad@example.com",
-  role: "User",
-  memberSince: "2025-11-02T00:00:00Z",
-};
+import { userService } from "../services/userService.js";
 
 const MOCK_CONTRIBUTIONS = [
   { id: "c1", label: "Journeys", count: 2 },
@@ -106,11 +98,29 @@ function createProfileHeader(user) {
 
   const memberSince = document.createElement("p");
   memberSince.className = "profile-page__meta";
-  memberSince.textContent = `Member since ${formatDate(user.memberSince)}`;
+  memberSince.textContent = `Member since ${formatDate(user.createdAt)}`;
 
   info.append(name, role, email, memberSince);
   header.appendChild(info);
   return header;
+}
+
+function loadProfileHeader(container) {
+  container.replaceChildren(createLoadingContainer({ message: "Loading profile…" }));
+
+  userService
+    .getCurrentUser()
+    .then((user) => {
+      container.replaceChildren(createProfileHeader(user));
+    })
+    .catch((error) => {
+      container.replaceChildren(
+        createErrorState({
+          message: error.message,
+          onRetry: () => loadProfileHeader(container),
+        })
+      );
+    });
 }
 
 export function createProfilePage() {
@@ -121,15 +131,14 @@ export function createProfilePage() {
   const container = document.createElement("div");
   container.className = "container";
 
+  const headerContainer = document.createElement("div");
+  loadProfileHeader(headerContainer);
+
   const contributionsHeading = document.createElement("h2");
   contributionsHeading.className = "profile-page__section-heading";
   contributionsHeading.textContent = "Contributions";
 
-  container.append(
-    createProfileHeader(MOCK_USER),
-    contributionsHeading,
-    createContributionsState(MOCK_CONTRIBUTIONS)
-  );
+  container.append(headerContainer, contributionsHeading, createContributionsState(MOCK_CONTRIBUTIONS));
 
   section.appendChild(container);
   return section;

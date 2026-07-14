@@ -30,6 +30,7 @@ builder.Services.AddScoped<IUserContext, UserContext>();
 
 builder.Services.AddScoped<JourneyService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<VoiceService>();
 builder.Services.AddScoped<MemoryService>();
 builder.Services.AddScoped<StoryService>();
