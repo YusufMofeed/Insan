@@ -41,6 +41,7 @@ public class JourneyRepository : BaseRepository<Journey>, IJourneyRepository
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query
+            .OrderByDescending(journey => journey.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);

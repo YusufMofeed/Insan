@@ -41,6 +41,20 @@ builder.Services.AddHealthChecks()
 
 builder.Services.AddControllers();
 
+// Development-only CORS: lets the local frontend dev server (served on a
+// different origin/port, e.g. http://localhost:5501) call this API from
+// a browser. Scoped to a single named origin, not AllowAnyOrigin, and
+// only ever applied when app.Environment.IsDevelopment() below — this is
+// intentionally not a production CORS policy.
+const string DevelopmentCorsPolicyName = "DevelopmentFrontend";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(DevelopmentCorsPolicyName, policy =>
+        policy.WithOrigins("http://localhost:5501")
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -81,6 +95,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors(DevelopmentCorsPolicyName);
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
