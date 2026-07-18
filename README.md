@@ -87,7 +87,7 @@ Pages talk to `services/`, never to `api/` or `fetch()` directly — see `fronte
 - **Public browsing** — Home, Journeys feed (paginated server-side, first page shown — see Known Limitations), Journey Details with independently-loading tabs (Voices, Memories, Stories, Life Events, Gallery).
 - **Authentication** — Register, Login, Logout, JWT stored in `localStorage`, session restored on page load.
 - **Route protection** — `requireAuth` (any logged-in user) and `requireRole("Admin", ...)` (Admin only, shows an in-shell permission-denied state rather than a bare redirect for a logged-in non-Admin).
-- **Profile page** (mock data — no `/users/me` backend endpoint exists yet).
+- **Profile page** — the user header (name, email, role, member-since) is real data via `GET /api/users/me`; the Contributions counts section remains mock data (no backend endpoint for that yet).
 - **Admin Journey management** — Create, Edit, Delete (with confirmation dialog and toast feedback), backed by the real Admin-only endpoints.
 - **Simple required-field validation** on Create/Edit Journey (Full Name, City, Occupation, Biography) — a UX convenience; the backend remains the actual source of truth for correctness.
 - **Consistent Loading / Empty / Error(+Retry) states** everywhere data is fetched.
@@ -196,11 +196,12 @@ Supplied locally via **.NET User Secrets** (as above — stored outside the repo
 | `GET/POST /api/journeys/{id}/memories`, `DELETE /api/memories/{id}` | Memory upload, listing, and removal |
 | `GET/POST /api/journeys/{id}/stories`, `DELETE /api/stories/{id}` | Story submission, listing, and removal |
 | `GET/POST/PUT/DELETE /api/journeys/{id}/lifeevents`, `.../api/lifeevents/{id}` | LifeEvent CRUD |
+| `GET /api/users/me` | Get the current authenticated user's own record (id, fullName, email, role, createdAt) |
 | `GET /health`, `/health/live`, `/health/ready` | Health checks |
 
 Full request/response contracts are available via Swagger (`/swagger`) in the Development environment.
 
-**Frontend usage of this API today**: `POST /api/auth/{register,login}`, `GET/POST/PUT/DELETE /api/journeys`, and `GET /api/journeys/{id}/{voices,memories,stories,lifeevents}`. The Voice/Memory/Story/LifeEvent write and moderation endpoints exist on the backend but have no frontend UI yet (see Future Work).
+**Frontend usage of this API today**: `POST /api/auth/{register,login}`, `GET/POST/PUT/DELETE /api/journeys`, `GET /api/journeys/{id}/{voices,memories,stories,lifeevents}`, and `GET /api/users/me`. The Voice/Memory/Story/LifeEvent write and moderation endpoints exist on the backend but have no frontend UI yet (see Future Work).
 
 ---
 
@@ -227,7 +228,7 @@ Full request/response contracts are available via Swagger (`/swagger`) in the De
 - **The MVP currently displays the first page of journeys only.** `GET /api/journeys` supports `page`/`pageSize` query parameters and the frontend's `journeyService.getJourneys(params)` already accepts them, but no Pagination UI has been built yet — anything beyond the first page (10 records by default) is not currently reachable from the UI.
 - **No content-contribution UI.** The backend supports submitting Voices, Memories, Stories, and Life Events, and moderating Voices, but the frontend only has read (view) and Admin Journey-management screens — there's no "Add Voice," "Add Memory," "Add Story," "Add Life Event," or moderation page yet.
 - **No frontend role-gating on `/admin/*` subpages beyond the ones explicitly built** (`/admin`, `/admin/journeys`) — only those two are wrapped in `requireRole("Admin", ...)` today; any future nested admin page needs the same guard applied explicitly.
-- **Profile and Admin Dashboard are mock data** — the backend has no `/users/me` or `/api/admin/dashboard` endpoint yet.
+- **Admin Dashboard is still mock data** — the backend has no `/api/admin/dashboard` endpoint yet (Profile's header is real as of `GET /api/users/me`; only its Contributions section is still mock).
 - **No refresh-token flow** — JWTs are short-lived (60 minutes); an expired token requires logging in again.
 - **No automated test suite** on either the frontend or backend.
 - **Search Page and Settings Page** are described in the product spec but have no backend endpoint to implement them against.
@@ -240,7 +241,6 @@ Full request/response contracts are available via Swagger (`/swagger`) in the De
 - Pagination UI for the Journeys feed and Admin Journeys table.
 - Add Voice / Add Memory / Add Story / Add Life Event pages, and a Voice Moderation (Content Moderation) admin section.
 - Role-based route guard applied to every nested admin page as it's built, not just the two that exist today.
-- A `/users/me` backend endpoint, so the Profile page can show real data instead of mock data.
 - A real `/api/admin/dashboard` endpoint (or a composed client-side equivalent) so the Admin Dashboard's statistics aren't hardcoded.
 - Production CORS configuration once the frontend and backend have real deployed origins.
 - Automated tests (backend unit/integration tests; frontend at least smoke-level).
