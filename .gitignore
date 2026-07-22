@@ -2,10 +2,12 @@
 bin/
 obj/
 out/
+TestResults/
 
 ## IDE
 .vs/
 .vscode/
+.idea/
 *.user
 *.suo
 
@@ -15,14 +17,26 @@ out/
 ## Logs
 *.log
 
+## Editor swap/backup files
+*.swp
+*.swo
+*~
+
 ## Secrets
 appsettings*.Development.json
 appsettings*.Production.json
 secrets.json
+.env
+.env.*
 
-## EF Core
-Migrations/*Designer.cs
-Migrations/*.db
+## Node (frontend has no npm dependencies today, but guard against one
+## ever being added without a matching .gitignore update)
+node_modules/
+
+## Python (frontend/serve.py is run directly and never imported, so this
+## shouldn't ever be generated, but guard against it anyway)
+__pycache__/
+*.pyc
 
 ## Local
 .claude/settings.local.json
