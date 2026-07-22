@@ -277,17 +277,17 @@ A route guard is exactly as trustworthy as any other frontend UI decision (Secti
 
 The project has no build tools (`01-frontend-principles.md` Section 3) — there is no bundler step to inject environment variables at build time the way a typical framework project would. Configuration has to be resolved **at runtime**, from the same static files served in every environment.
 
-## Recommended strategy: runtime detection
+## Implemented strategy: config file override, with runtime detection as the fallback
 
-A single, small configuration module (living alongside `API_BASE_URL`, Section 2) determines the environment by inspecting `window.location.hostname` at load time: known local-development hostnames (`localhost`, `127.0.0.1`) resolve to the local backend's URL; anything else resolves to the deployed backend's URL. This requires zero deployment tooling — the exact same HTML/CSS/JS files are served everywhere, and the browser figures out which backend to call based on where the page itself is being served from.
+Both approaches previously discussed here are implemented together, not as alternatives: `frontend/config.js` — loaded via a plain `<script>` tag in `index.html`, before `js/app.js` — sets a single global, `window.__INSAN_CONFIG__.API_BASE_URL`. As committed, this value is empty.
 
-## Alternative: swapped config file
+`js/config/api.js` checks that value first. If it's set, it's used verbatim — this is the deploy-time override point for a production (or staging) deployment where the frontend and backend do not share an origin, and hostname-based detection isn't reliable enough to distinguish them. If it's empty (as committed, and therefore in every local development setup), `js/config/api.js` falls back to inspecting `window.location.hostname`: known local-development hostnames (`localhost`, `127.0.0.1`) resolve to the local backend's URL; anything else resolves to the deployed backend's URL via a same-origin relative path (`/api`), assuming a reverse proxy routes it to the backend.
 
-If hostname-based detection isn't reliable enough (e.g. a staging environment that isn't cleanly distinguishable from production by hostname), an alternative is a config file that the deployment process swaps into place before serving — e.g. a dev version and a production version of the same file, with only one ever actually deployed under the real filename at a time. This is a deploy-time file copy, not a build step, so it stays within the "no build tools" constraint, but it does require the deployment process to do that swap correctly, which the runtime-detection approach avoids entirely.
+Deploying a real override means editing (or having the deployment process overwrite) `frontend/config.js` with a real `API_BASE_URL` — see `frontend/config.production.example.js` for the shape. This is a deploy-time file edit, not a build step, so it stays within the "no build tools" constraint (Section 1 of `01-frontend-principles.md`).
 
 ## Rule regardless of which strategy is used
 
-`API_BASE_URL` is the only environment-dependent value today. If other environment-specific values are ever needed, they are resolved by the same single configuration module — never scattered across multiple files, and never hardcoded per-environment inside a page or component.
+`API_BASE_URL` is the only environment-dependent value today. If other environment-specific values are ever needed, they are resolved by the same `config.js` / `js/config/api.js` pair — never scattered across multiple files, and never hardcoded per-environment inside a page or component.
 
 ---
 

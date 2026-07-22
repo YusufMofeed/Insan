@@ -65,6 +65,10 @@ frontend/js/
 ├── services/    → Page-facing service layer sitting above the api/ modules
 ├── config/      → Runtime API base URL resolution (dev vs. production, no build-time env vars)
 └── utils/       → Small helpers (formatDate)
+
+frontend/config.js                     → Deploy-time override point (see Production Deployment below)
+frontend/config.production.example.js  → Example shape for the above; not loaded by the app
+frontend/serve.py                      → Static file server with SPA fallback, used in both dev and prod
 ```
 
 Pages talk to `services/`, never to `api/` or `fetch()` directly — see `frontend/docs/06-page-implementation-rules.md` for the enforced layering.
@@ -77,7 +81,7 @@ Pages talk to `services/`, never to `api/` or `fetch()` directly — see `fronte
 - **Authentication** — registration (`POST /api/auth/register`) and login (`POST /api/auth/login`), issuing JWTs.
 - **JWT + role-based authorization** — `[Authorize(Roles = ...)]` on every write endpoint, enforced via standard ASP.NET Core JWT bearer middleware.
 - **CRUD modules**: Journeys (Admin-only writes, public reads), Voices (authenticated submission, Moderator/Admin moderation), Memories (authenticated upload, Admin-only delete), Stories (authenticated submission, Admin-only delete), LifeEvents (authenticated creation, Admin-only update/delete).
-- **Development CORS** — a named policy scoped to `http://localhost:5501` only, applied exclusively when `ASPNETCORE_ENVIRONMENT=Development`; never `AllowAnyOrigin`.
+- **Configurable CORS for every environment** — a named policy whose allowed origin(s) come from `Cors:AllowedOrigins` configuration (an environment variable in any real deployment); never `AllowAnyOrigin`. Development falls back to `http://localhost:5501` with zero configuration needed; outside Development, an unset `Cors:AllowedOrigins` fails the app at startup rather than silently allowing nothing (or everything).
 - **Global exception handling middleware** — every error response follows a standard `{ success, message, code }` shape; no stack traces are ever returned to the client.
 - **Structured logging** via Serilog, with a correlation-ID middleware.
 - **Health checks** — liveness (`/health/live`) and readiness (`/health/ready`, checks database connectivity), plus a combined `/health`.
@@ -150,14 +154,16 @@ This applies pending EF Core migrations automatically on startup. The API listen
 
 ### 3. Frontend
 
-The frontend is static files — any static file server works. From the repository root:
+The frontend is static files, served with SPA fallback (`frontend/serve.py`) so that direct URL loads and refreshes on client-side routes — e.g. `/journeys/{id}`, `/admin/journeys` — work correctly instead of 404ing. From the repository root:
 
 ```bash
 cd frontend
-python3 -m http.server 5501
+python3 serve.py
 ```
 
 Then open **`http://localhost:5501`** in a browser.
+
+> Plain `python3 -m http.server` also serves the app, but only for in-app navigation (clicking links) — since it has no SPA fallback, typing a client-side route's URL directly or refreshing on one returns a 404, because no matching file exists on disk at that path. `serve.py` fixes this by falling back to `index.html` for any path that isn't a real file.
 
 > **Port 5501 matters**: the backend's development CORS policy only allows `http://localhost:5501` as an origin. If you serve the frontend on a different port, API requests will be blocked by the browser. `frontend/js/config/api.js` already points at `http://localhost:5200/api` for any `localhost`/`127.0.0.1` origin, so no frontend configuration is needed — just keep the frontend on port 5501, or update both the frontend's dev port and the backend's CORS origin together if you need a different one.
 
@@ -169,8 +175,9 @@ Then open **`http://localhost:5501`** in a browser.
 | `Jwt:Key` | JWT signing secret (HMAC-SHA256) |
 | `Jwt:Issuer` | JWT issuer |
 | `Jwt:Audience` | JWT audience |
+| `Cors:AllowedOrigins` | Array of allowed frontend origin(s). Defaults to `["http://localhost:5501"]` in Development only; **required** in every other environment (the app fails fast at startup if it's missing) |
 
-Supplied locally via **.NET User Secrets** (as above — stored outside the repo, never committed) or, in Docker/other environments, via environment variables using double-underscore nesting (e.g. `Jwt__Key`).
+Supplied locally via **.NET User Secrets** (as above — stored outside the repo, never committed) or, in Docker/other environments, via environment variables using double-underscore nesting (e.g. `Jwt__Key`, `Cors__AllowedOrigins__0`). See **Production Deployment** below for the full list of environment variables a real deployment needs.
 
 ---
 
@@ -210,8 +217,8 @@ Full request/response contracts are available via Swagger (`/swagger`) in the De
 - **JWT authentication** — tokens are signed with HMAC-SHA256 and carry the user's ID and role.
 - **Role-based authorization** — every write endpoint is annotated with `[Authorize(Roles = ...)]`, mirrored on the frontend by route guards (`requireAuth`, `requireRole`) that are UX-only, never the actual security boundary.
 - **Password hashing** — BCrypt (`BCrypt.Net-Next`); passwords are never stored, logged, or returned in plaintext.
-- **Development-only CORS** — a single named origin (`http://localhost:5501`), never applied outside `Development`, never `AllowAnyOrigin`. Production CORS (if the frontend and backend are ever served from different origins in production) is not yet configured — see Future Work.
-- **No sensitive data exposure** — API responses never include password hashes or JWT contents; secrets are never committed and are supplied only via User Secrets or environment variables.
+- **CORS, configured per environment** — a single named policy, always scoped to an explicit allow-list (never `AllowAnyOrigin`), sourced from `Cors:AllowedOrigins` configuration. Development defaults to `http://localhost:5501`; every other environment must set this explicitly (env var) or the app refuses to start.
+- **No sensitive data exposure** — API responses never include password hashes or JWT contents; secrets are never committed and are supplied only via User Secrets (Development) or environment variables (every other environment) — never via a committed `appsettings.*.json` file.
 
 ---
 
@@ -219,7 +226,45 @@ Full request/response contracts are available via Swagger (`/swagger`) in the De
 
 - **Docker Compose** provisions the API and a PostgreSQL 15 container on a shared bridge network, with a `pg_isready` health check on Postgres gating the API's startup.
 - **CI (GitHub Actions)** runs on every push to `main` and every pull request: restores dependencies, builds with warnings treated as errors, runs tests (if any exist), and validates that the Docker image builds. It does not deploy anywhere — CI is build/validation only.
-- The frontend has no build step, so "deploying" it is just serving the static files — any static host works, as long as `frontend/js/config/api.js`'s production branch (`/api`, a same-origin relative path) is fronted by a reverse proxy that routes `/api` to the backend.
+- The frontend has no build step, so "deploying" it is just serving the static files.
+
+This repository is **prepared** for production but has not been deployed anywhere — the steps below describe how to actually do that when you're ready.
+
+### Production Deployment
+
+**Backend — every configurable value is an environment variable, none is a committed file.** Nothing here is new configuration infrastructure — it's the same `ConnectionStrings`/`Jwt`/`Cors` keys used in Development, just supplied differently:
+
+| Environment variable | Required? | Purpose |
+|---|---|---|
+| `ASPNETCORE_ENVIRONMENT` | Yes | Set to `Production`. Disables Swagger and switches CORS to strict (no Development fallback). |
+| `ASPNETCORE_URLS` | Yes | e.g. `http://+:8080` — the address Kestrel binds to inside the container. |
+| `ConnectionStrings__DefaultConnection` | Yes | Real PostgreSQL connection string. |
+| `Jwt__Key` | Yes | A long, random signing secret — **must** differ from any value used in Development. |
+| `Jwt__Issuer` / `Jwt__Audience` | Yes | JWT issuer/audience. |
+| `Jwt__ExpiryMinutes` | No (defaults to `60`) | Token lifetime. |
+| `Cors__AllowedOrigins__0` (and `__1`, `__2`, … for more than one) | Yes | The deployed frontend's real origin(s), e.g. `https://insan.example.com`. The app **fails fast at startup** if this is unset outside Development — this is intentional, not a bug: it's safer to refuse to start than to silently run with no CORS policy (or, worse, an open one). |
+
+Via Docker Compose, all of the above (except `Cors:AllowedOrigins`, `Jwt:Key`, and the Postgres password, which you must supply) already have working defaults in `docker-compose.yml`:
+
+```bash
+JWT_KEY="<a long, random signing secret>" \
+CORS_ALLOWED_ORIGIN="https://insan.example.com" \
+POSTGRES_PASSWORD="<a real password>" \
+docker-compose up -d
+```
+
+(Or put those three in a local `.env` file next to `docker-compose.yml` — already gitignored — and just run `docker-compose up -d`.)
+
+Migrations still run exactly the same way in this mode: `MigrateDatabaseAsync()` (Program.cs) applies pending EF Core migrations automatically on startup, with retry logic, regardless of `ASPNETCORE_ENVIRONMENT` — this was verified directly for both Development and Production during this preparation work, not merely assumed.
+
+**Frontend — one file to edit at deploy time, still no build step.** `frontend/config.js` is the single override point (see `frontend/docs/05-api-integration.md` Section 16):
+- As committed, it's empty, and the app falls back to its existing runtime hostname detection (`localhost`/`127.0.0.1` → local backend; anything else → same-origin `/api`, assuming a reverse proxy routes `/api` to the backend).
+- If the frontend and backend will **not** share an origin in production, copy the shape from `frontend/config.production.example.js` into `frontend/config.js` (or have your deployment process overwrite it) with the real backend URL, before serving the static files. This is a deploy-time file edit, not a build step — the rest of the frontend is untouched.
+- Either way, serve the static files with **SPA fallback** (`frontend/serve.py`, or an equivalent rule in whatever host/reverse proxy you use) so that direct loads and refreshes on client-side routes work — see the Setup section above for why this matters.
+
+### What "Do not deploy yet" means here
+
+This section documents how to deploy; it does not describe an environment that has actually been stood up. No real domain, TLS certificate, or hosting provider is referenced anywhere in this repository — `https://insan.example.com` above is a placeholder for wherever the frontend eventually ends up.
 
 ---
 
@@ -242,7 +287,6 @@ Full request/response contracts are available via Swagger (`/swagger`) in the De
 - Add Voice / Add Memory / Add Story / Add Life Event pages, and a Voice Moderation (Content Moderation) admin section.
 - Role-based route guard applied to every nested admin page as it's built, not just the two that exist today.
 - A real `/api/admin/dashboard` endpoint (or a composed client-side equivalent) so the Admin Dashboard's statistics aren't hardcoded.
-- Production CORS configuration once the frontend and backend have real deployed origins.
 - Automated tests (backend unit/integration tests; frontend at least smoke-level).
 - Refresh-token support so a session doesn't require re-login every 60 minutes.
 

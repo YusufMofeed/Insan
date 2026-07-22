@@ -42,16 +42,37 @@ builder.Services.AddHealthChecks()
 
 builder.Services.AddControllers();
 
-// Development-only CORS: lets the local frontend dev server (served on a
-// different origin/port, e.g. http://localhost:5501) call this API from
-// a browser. Scoped to a single named origin, not AllowAnyOrigin, and
-// only ever applied when app.Environment.IsDevelopment() below — this is
-// intentionally not a production CORS policy.
-const string DevelopmentCorsPolicyName = "DevelopmentFrontend";
+// CORS: the allowed origin(s) come from configuration (Cors:AllowedOrigins),
+// which in turn is populated from the CORS__ALLOWEDORIGINS__0 (etc.)
+// environment variable in any real deployment — never hardcoded here. The
+// one exception is Development: if nothing is configured, it falls back to
+// the local frontend dev server's origin (http://localhost:5501) so a fresh
+// clone works with zero extra setup, matching the previous hardcoded
+// behavior exactly. Outside Development, an empty list is a configuration
+// error and fails fast at startup rather than silently allowing no origins
+// (or, worse, silently allowing every origin).
+var corsAllowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? Array.Empty<string>();
+
+if (corsAllowedOrigins.Length == 0)
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        corsAllowedOrigins = new[] { "http://localhost:5501" };
+    }
+    else
+    {
+        throw new InvalidOperationException(
+            "Cors:AllowedOrigins is not configured. Set at least one allowed origin " +
+            "(e.g. via the CORS__ALLOWEDORIGINS__0 environment variable) outside Development.");
+    }
+}
+
+const string CorsPolicyName = "InsanFrontend";
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(DevelopmentCorsPolicyName, policy =>
-        policy.WithOrigins("http://localhost:5501")
+    options.AddPolicy(CorsPolicyName, policy =>
+        policy.WithOrigins(corsAllowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader());
 });
@@ -97,10 +118,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseCors(DevelopmentCorsPolicyName);
-}
+app.UseCors(CorsPolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();
