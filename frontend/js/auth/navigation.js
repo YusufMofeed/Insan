@@ -28,6 +28,7 @@ export function createAppNavbar(router) {
 
     if (authState.currentUser?.role === "Admin") {
       links.push({ label: "Admin", href: "/admin" });
+      links.push({ label: "Manage Journeys", href: "/admin/journeys" });
     }
 
     actions.push(

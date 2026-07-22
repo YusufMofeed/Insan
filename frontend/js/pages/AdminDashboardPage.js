@@ -11,9 +11,10 @@
 // No API calls, no services (06 Section 4) — there is no
 // `GET /api/admin/dashboard` endpoint on the backend yet
 // (04-pages-specification.md Section 9), so both the statistics and the
-// Recent Activity table are mock data. Management links (Journey
-// Management, Content Moderation) and any CRUD pages are out of scope for
-// this task.
+// Recent Activity table are mock data. A "Manage Journeys" link is
+// provided below to reach the real, implemented Journey Management page
+// (js/pages/AdminJourneysPage.js); a Content Moderation page does not
+// exist yet, so no link is added for it.
 
 import { createCard } from "../components/Card.js";
 import { createBadge } from "../components/Badge.js";
@@ -171,6 +172,11 @@ export function createAdminDashboardPage() {
   description.className = "admin-dashboard__description";
   description.textContent = "Platform overview and recent activity.";
 
+  const manageLink = document.createElement("a");
+  manageLink.className = "btn btn--primary admin-dashboard__manage-link";
+  manageLink.href = "/admin/journeys";
+  manageLink.textContent = "Manage Journeys";
+
   const activityHeading = document.createElement("h2");
   activityHeading.className = "admin-dashboard__section-heading";
   activityHeading.textContent = "Recent Activity";
@@ -187,7 +193,7 @@ export function createAdminDashboardPage() {
     emptyDescription: "Recent platform activity will appear here.",
   });
 
-  container.append(title, description, statsState, activityHeading, activityState);
+  container.append(title, description, manageLink, statsState, activityHeading, activityState);
 
   section.appendChild(container);
   return section;

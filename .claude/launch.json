@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend-static",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["frontend/serve.py", "5501"],
+      "port": 5501
+    }
+  ]
+}
